@@ -1,0 +1,37 @@
+# Ignoruj foldery związane z konfiguracją developmentu
+.devcontainer/
+.vscode/
+
+# Ignoruj katalog build (wynik kompilacji)
+build/
+
+# Ignoruj pliki SDK i konfiguracji systemu
+sdkconfig
+sdkconfig.ci
+sdkconfig.old
+
+# Ignoruj pliki tymczasowe systemu operacyjnego
+*.DS_Store
+Thumbs.db
+
+# Ignoruj pliki generowane przez edytory/IDE
+*.log
+*.swp
+*.swo
+
+# Ignoruj pliki binarne
+*.bin
+*.elf
+*.hex
+*.map
+
+# Ignoruj pliki zależności
+*.d
+*.o
+*.a
+*.so
+
+# Ignoruj pliki wynikowe testów
+*.pytest_cache/
+__pycache__/
+*.pyc
