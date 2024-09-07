@@ -12,7 +12,8 @@ extern rmt_channel_handle_t rx_chan1;
 extern rmt_channel_handle_t rx_chan2;
 
 // Deklaracje funkcji
-void setup_rmt_channels(void);
+void setup_rmt_channels(int *throttle, int *steering);
+void process_pwm_signals_with_args(void *pvParameter);
 void process_pwm_signals(void *pvParameter);
-
+void control_motors(int throttle, int steering);
 #endif // RMT_CAPTURE_H
