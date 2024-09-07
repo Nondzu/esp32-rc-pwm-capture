@@ -13,6 +13,6 @@ extern rmt_channel_handle_t rx_chan2;
 
 // Deklaracje funkcji
 void setup_rmt_channels(void);
-void process_pwm_signals(void);
+void process_pwm_signals(void *pvParameter);
 
 #endif // RMT_CAPTURE_H

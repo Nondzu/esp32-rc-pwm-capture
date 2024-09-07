@@ -66,74 +66,38 @@ void setup_rmt_channels() {
     rmt_rx_event_callbacks_t cbs2 = { .on_recv_done = rmt_rx_done_callback };
     ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rx_chan2, &cbs2, receive_queue2));
     ESP_ERROR_CHECK(rmt_enable(rx_chan2));
+
+    
+    xTaskCreate(process_pwm_signals, "process_pwm_signals", 4096, NULL, 5, NULL);
 }
 
 char log_buffer[328];
 // Funkcja do przetwarzania sygnałów PWM z obu kanałów
-void process_pwm_signals() {
+void process_pwm_signals(void *pvParameter) {
     rmt_symbol_word_t raw_symbols1[MEM_BLOCK_SYMBOLS];
     rmt_symbol_word_t raw_symbols2[MEM_BLOCK_SYMBOLS];
     
+    while (true) {    
+        // Odbieranie i przetwarzanie z kanału 1 (Throttle)
+        ESP_ERROR_CHECK(rmt_receive(rx_chan1, raw_symbols1, sizeof(raw_symbols1), &receive_config));
+        rmt_rx_done_event_data_t rx_data1;
+        xQueueReceive(receive_queue1, &rx_data1, portMAX_DELAY);
+        ESP_LOGI(TAG, "Kanal 1: Odebrano %d symboli", rx_data1.num_symbols);
+        for (int i = 0; i < rx_data1.num_symbols; i++) {
+            sprintf(log_buffer, "Kanal 1 - Symbol %d: duration0=%u duration1=%u", 
+                    i, (unsigned int)rx_data1.received_symbols[i].duration0, (unsigned int)rx_data1.received_symbols[i].duration1);
+            ESP_LOGI(TAG, "%s", log_buffer);
+        }
 
-    // Odbieranie i przetwarzanie z kanału 1 (Throttle)
-    ESP_ERROR_CHECK(rmt_receive(rx_chan1, raw_symbols1, sizeof(raw_symbols1), &receive_config));
-    rmt_rx_done_event_data_t rx_data1;
-    xQueueReceive(receive_queue1, &rx_data1, portMAX_DELAY);
-    ESP_LOGI(TAG, "Kanał 1: Odebrano %d symboli", rx_data1.num_symbols);
-    for (int i = 0; i < rx_data1.num_symbols; i++) {
-        sprintf(log_buffer, "Kanał 1 - Symbol %d: duration0=%u duration1=%u", 
-                i, (unsigned int)rx_data1.received_symbols[i].duration0, (unsigned int)rx_data1.received_symbols[i].duration1);
-        ESP_LOGI(TAG, "%s", log_buffer);
-    }
-
-    // Odbieranie i przetwarzanie z kanału 2 (Steering)
-    ESP_ERROR_CHECK(rmt_receive(rx_chan2, raw_symbols2, sizeof(raw_symbols2), &receive_config));
-    rmt_rx_done_event_data_t rx_data2;
-    xQueueReceive(receive_queue2, &rx_data2, portMAX_DELAY);
-    ESP_LOGI(TAG, "Kanał 2: Odebrano %d symboli", rx_data2.num_symbols);
-    for (int i = 0; i < rx_data2.num_symbols; i++) {
-        sprintf(log_buffer, "Kanał 2 - Symbol %d: duration0=%u duration1=%u", 
-                i, (unsigned int)rx_data2.received_symbols[i].duration0, (unsigned int)rx_data2.received_symbols[i].duration1);
-        ESP_LOGI(TAG, "%s", log_buffer);
+        // Odbieranie i przetwarzanie z kanału 2 (Steering)
+        ESP_ERROR_CHECK(rmt_receive(rx_chan2, raw_symbols2, sizeof(raw_symbols2), &receive_config));
+        rmt_rx_done_event_data_t rx_data2;
+        xQueueReceive(receive_queue2, &rx_data2, portMAX_DELAY);
+        ESP_LOGI(TAG, "Kanal 2: Odebrano %d symboli", rx_data2.num_symbols);
+        for (int i = 0; i < rx_data2.num_symbols; i++) {
+            sprintf(log_buffer, "Kanal 2 - Symbol %d: duration0=%u duration1=%u", 
+                    i, (unsigned int)rx_data2.received_symbols[i].duration0, (unsigned int)rx_data2.received_symbols[i].duration1);
+            ESP_LOGI(TAG, "%s", log_buffer);
+        }
     }
 }
-
-
-
-// void process_pwm_signals(rmt_channel_handle_t rx_chan1, rmt_channel_handle_t rx_chan2, 
-//                          QueueHandle_t receive_queue1, QueueHandle_t receive_queue2, 
-//                          rmt_symbol_word_t *raw_symbols1, rmt_symbol_word_t *raw_symbols2, 
-//                          rmt_receive_config_t *receive_config1, rmt_receive_config_t *receive_config2) {
-    
-//     char log_buffer[128];  // Bufor na sformatowany tekst
-
-//     // Odbieranie z kanału 1 (GPIO 2)
-//     ESP_ERROR_CHECK(rmt_receive(rx_chan1, raw_symbols1, sizeof(raw_symbols1), receive_config1));
-
-//     // Oczekuj na zakończenie odbioru z kanału 1
-//     rmt_rx_done_event_data_t rx_data1;
-//     xQueueReceive(receive_queue1, &rx_data1, portMAX_DELAY);
-
-//     // Przetwarzanie odebranych symboli z kanału 1
-//     ESP_LOGI(TAG, "Kanał 1: Odebrano %d symboli", rx_data1.num_symbols);
-//     for (int i = 0; i < rx_data1.num_symbols; i++) {
-//         sprintf(log_buffer, "Kanał 1 - Symbol %d: duration0=%u duration1=%u", 
-//                 i, (unsigned int)rx_data1.received_symbols[i].duration0, (unsigned int)rx_data1.received_symbols[i].duration1);
-//         ESP_LOGI(TAG, "%s", log_buffer);
-//     }
-
-//     // Odbieranie z kanału 2 (GPIO 3)
-//     ESP_ERROR_CHECK(rmt_receive(rx_chan2, raw_symbols2, sizeof(raw_symbols2), receive_config2));
-
-//     // Oczekuj na zakończenie odbioru z kanału 2
-//     rmt_rx_done_event_data_t rx_data2;
-//     xQueueReceive(receive_queue2, &rx_data2, portMAX_DELAY);
-
-//     // Przetwarzanie odebranych symboli z kanału 2
-//     ESP_LOGI(TAG, "Kanał 2: Odebrano %d symboli", rx_data2.num_symbols);
-//     for (int i = 0; i < rx_data2.num_symbols; i++) {
-//         sprintf(log_buffer, "Kanał 2 - Symbol %d: duration0=%u duration1=%u", 
-//                 i, (unsigned int)rx_data2.received_symbols[i].duration0, (unsigned int)rx_data2.received_symbols[i].duration1);
-//         ESP_LOGI(TAG, "%s", log_buffer);
-//     }
-// }

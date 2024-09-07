@@ -3,9 +3,9 @@
 #include "esp_log.h"
 #include "driver/rmt_rx.h"
 #include "rmt_capture.h"
+#include "driver/gpio.h"
 
 #define MEM_BLOCK_SYMBOLS 64
-
 
 #define LED_PIN 21           // Ustaw pin do migania LED
 #define RC_PWM1_PIN 2        // Ustaw pin do odbioru PWM na GPIO 2 (Throttle)
@@ -32,9 +32,27 @@ int map_pwm_to_motor_speed(uint32_t pwm_value) {
     return (int)((pwm_value - PWM_MIN) * 255 / (PWM_MAX - PWM_MIN));  // Normalizacja do zakresu 0-255
 }
 
+// Funkcja do migania LED
+void led_blink_task(void *pvParameter) {
+    gpio_reset_pin(LED_PIN);
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
 
+    while (true) {
+        gpio_set_level(LED_PIN, 0);
+        vTaskDelay(111 / portTICK_PERIOD_MS);
+
+        gpio_set_level(LED_PIN, 1);
+        vTaskDelay(2345 / portTICK_PERIOD_MS);
+
+        // print time
+        printf("Time: %u \n", (unsigned int)xTaskGetTickCount());
+    }
+}
 // Główna funkcja
 void app_main(void) {
+
+    xTaskCreate(led_blink_task, "led_blink_task", 4096, NULL, 5, NULL);
+
     // Konfiguracja PWM dla silników
     setup_motor_pwm();
     
@@ -44,9 +62,9 @@ void app_main(void) {
     // Tutaj można dodać logikę do przetwarzania danych z kanałów RMT i sterowania PWM
     
         // Odbieranie i aktualizowanie sygnałów PWM...
-        while (true) {
-            // Przetwarzanie sygnałów PWM z kanałów
-            process_pwm_signals();
-            // vTaskDelay(20 / portTICK_PERIOD_MS);  // Czekaj 20 ms
-            }
+        // while (true) {
+        //     // Przetwarzanie sygnałów PWM z kanałów
+        //     // process_pwm_signals();
+        //     vTaskDelay(20 / portTICK_PERIOD_MS);  // Czekaj 20 ms
+        //     }
 }
